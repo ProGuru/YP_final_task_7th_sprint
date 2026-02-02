@@ -1,12 +1,14 @@
 package main
 
 import (
+	"fmt"
 	"net/http"
 	"net/http/httptest"
 	"strings"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 )
 
 func TestCafeNegative(t *testing.T) {
@@ -46,5 +48,100 @@ func TestCafeWhenOk(t *testing.T) {
 		handler.ServeHTTP(response, req)
 
 		assert.Equal(t, http.StatusOK, response.Code)
+	}
+}
+
+/*
+Для сервера уже имеется проверка корректных и некорректных запросов, но мы ещё не проверяли, правильно ли отрабатывает сервер, когда указан параметр count, и верно ли работает поиск по подстроке из параметра search. Это вам и нужно будет сделать в этом проекте.
+*/
+
+// TestCafeCount() — проверяет работу сервера при разных значениях параметра count
+func TestCafeCount(t *testing.T) {
+	handler := http.HandlerFunc(mainHandle)
+	maxCafeInMoscow := len(cafeList["moscow"])
+	maxCafeInTula := len(cafeList["tula"])
+
+	requestsMsk := []struct {
+		count int // передаваемое значение count
+		want  int // ожидаемое количество кафе в ответе
+	}{
+		{0, 0},
+		{1, 1},
+		{2, 2},
+		{100, maxCafeInMoscow},
+	}
+	requestsTula := []struct {
+		count int // передаваемое значение count
+		want  int // ожидаемое количество кафе в ответе
+	}{
+		{0, 0},
+		{1, 1},
+		{2, 2},
+		{100, maxCafeInTula},
+	}
+
+	for _, v := range requestsMsk {
+		response := httptest.NewRecorder()
+		req := httptest.NewRequest("GET", fmt.Sprintf("/cafe?city=moscow&count=%d", v.count), nil)
+		handler.ServeHTTP(response, req)
+		require.Equal(t, http.StatusOK, response.Code)
+
+		cafes := strings.TrimSpace(response.Body.String())
+		var cafesCount int
+		if cafes == "" {
+			cafesCount = 0
+		} else {
+			cafesCount = len(strings.Split(cafes, ","))
+		}
+
+		assert.Equal(t, v.want, cafesCount)
+	}
+
+	for _, v := range requestsTula {
+		response := httptest.NewRecorder()
+		req := httptest.NewRequest("GET", fmt.Sprintf("/cafe?city=tula&count=%d", v.count), nil)
+		handler.ServeHTTP(response, req)
+		require.Equal(t, http.StatusOK, response.Code)
+
+		cafes := strings.TrimSpace(response.Body.String())
+		var cafesCount int
+		if cafes == "" {
+			cafesCount = 0
+		} else {
+			cafesCount = len(strings.Split(cafes, ","))
+		}
+
+		assert.Equal(t, v.want, cafesCount)
+	}
+}
+
+// TestCafeSearch() — проверяет результат поиска кафе по указанной подстроке в параметре search
+func TestCafeSearch(t *testing.T) {
+	handler := http.HandlerFunc(mainHandle)
+
+	requestsMsk := []struct {
+		search    string // передаваемое значение search
+		wantCount int    // ожидаемое количество кафе в ответе
+	}{
+		{"search=фасоль", 0},
+		{"search=кофе", 2},
+		{"search=вилка", 1},
+	}
+
+	for _, v := range requestsMsk {
+		response := httptest.NewRecorder()
+		req := httptest.NewRequest("GET", fmt.Sprint("/cafe?city=moscow&"+v.search), nil)
+		handler.ServeHTTP(response, req)
+		require.Equal(t, http.StatusOK, response.Code)
+
+		cafes := strings.TrimSpace(response.Body.String())
+		var cafesCount int
+		if cafes == "" {
+			cafesCount = 0
+		} else {
+			cafesCount = len(strings.Split(cafes, ","))
+		}
+
+		assert.Equal(t, v.wantCount, cafesCount)
 	}
 }
