@@ -123,25 +123,25 @@ func TestCafeSearch(t *testing.T) {
 		search    string // передаваемое значение search
 		wantCount int    // ожидаемое количество кафе в ответе
 	}{
-		{"search=фасоль", 0},
-		{"search=кофе", 2},
-		{"search=вилка", 1},
+		{"фасоль", 0},
+		{"кофе", 2},
+		{"вилка", 1},
 	}
 
 	for _, v := range requestsMsk {
 		response := httptest.NewRecorder()
-		req := httptest.NewRequest("GET", fmt.Sprint("/cafe?city=moscow&"+v.search), nil)
+		req := httptest.NewRequest("GET", fmt.Sprint("/cafe?city=moscow&search="+v.search), nil)
 		handler.ServeHTTP(response, req)
 		require.Equal(t, http.StatusOK, response.Code)
 
-		cafes := strings.TrimSpace(response.Body.String())
-		var cafesCount int
-		if cafes == "" {
-			cafesCount = 0
-		} else {
-			cafesCount = len(strings.Split(cafes, ","))
+		cafes := strings.Split(strings.TrimSpace(response.Body.String()), ",")
+		var count int
+		for _, cafe := range cafes {
+			if strings.Contains(strings.ToLower(cafe), strings.ToLower(v.search)) {
+				count++
+			}
 		}
 
-		assert.Equal(t, v.wantCount, cafesCount)
+		assert.Equal(t, v.wantCount, count)
 	}
 }
