@@ -68,7 +68,7 @@ func TestCafeCount(t *testing.T) {
 		{0, 0},
 		{1, 1},
 		{2, 2},
-		{100, maxCafeInMoscow},
+		{100, min(maxCafeInMoscow, 100)},
 	}
 	requestsTula := []struct {
 		count int // передаваемое значение count
@@ -77,14 +77,13 @@ func TestCafeCount(t *testing.T) {
 		{0, 0},
 		{1, 1},
 		{2, 2},
-		{100, maxCafeInTula},
+		{100, min(maxCafeInTula, 100)},
 	}
 
 	for _, v := range requestsMsk {
 		response := httptest.NewRecorder()
 		req := httptest.NewRequest("GET", fmt.Sprintf("/cafe?city=moscow&count=%d", v.count), nil)
 		handler.ServeHTTP(response, req)
-		require.Equal(t, http.StatusOK, response.Code)
 
 		cafes := strings.TrimSpace(response.Body.String())
 		var cafesCount int
@@ -94,6 +93,7 @@ func TestCafeCount(t *testing.T) {
 			cafesCount = len(strings.Split(cafes, ","))
 		}
 
+		require.Equal(t, http.StatusOK, response.Code)
 		assert.Equal(t, v.want, cafesCount)
 	}
 
@@ -101,7 +101,6 @@ func TestCafeCount(t *testing.T) {
 		response := httptest.NewRecorder()
 		req := httptest.NewRequest("GET", fmt.Sprintf("/cafe?city=tula&count=%d", v.count), nil)
 		handler.ServeHTTP(response, req)
-		require.Equal(t, http.StatusOK, response.Code)
 
 		cafes := strings.TrimSpace(response.Body.String())
 		var cafesCount int
@@ -111,6 +110,7 @@ func TestCafeCount(t *testing.T) {
 			cafesCount = len(strings.Split(cafes, ","))
 		}
 
+		require.Equal(t, http.StatusOK, response.Code)
 		assert.Equal(t, v.want, cafesCount)
 	}
 }
@@ -132,7 +132,6 @@ func TestCafeSearch(t *testing.T) {
 		response := httptest.NewRecorder()
 		req := httptest.NewRequest("GET", fmt.Sprint("/cafe?city=moscow&search="+v.search), nil)
 		handler.ServeHTTP(response, req)
-		require.Equal(t, http.StatusOK, response.Code)
 
 		cafes := strings.Split(strings.TrimSpace(response.Body.String()), ",")
 		var count int
@@ -142,6 +141,7 @@ func TestCafeSearch(t *testing.T) {
 			}
 		}
 
+		require.Equal(t, http.StatusOK, response.Code)
 		assert.Equal(t, v.wantCount, count)
 	}
 }
